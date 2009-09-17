@@ -1,1 +1,14 @@
- 
+This is a PHP implementation of a simple SIP user agent.
+
+It is still work in progress.
+
+Currently only Linux OS is supported. Windows version will be released soon.
+
+PHP-SIP is not a VoIP phone. It is not possible to make "voip calls" - only SIP signalling is supported.
+
+It can be used for:
+
+ * click to call
+ * SIMPLE instant messaging
+ * Message Waiting Indication NOTIFY
+ * more...  
