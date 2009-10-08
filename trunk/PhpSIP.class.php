@@ -223,6 +223,16 @@ class PhpSIP
   }
   
   /**
+   * Sets debuggin ON/OFF
+   * 
+   * @param bool $status
+   */
+  public function setDebug($status = false)
+  {
+    $this->debug = $status;
+  }
+  
+  /**
    * Gets port number to bind
    */
   private function getPort()
