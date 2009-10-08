@@ -677,19 +677,24 @@ class PhpSIP
   
   /**
    * Listen for request
+   * 
+   * @todo This needs to be improved
    */
   public function listen($method)
   {
-    $this->readResponse();
-    
-    if ($this->req_method != $method)
+    $i = 0;
+    while ($this->req_method != $method)
     {
-      throw new Exception("Unexpected request ".$this->req_method."received.");
+      $this->readResponse(); 
+      
+      $i++;
+      
+      if ($i > 5)
+      {
+        throw new Exception("Unexpected request ".$this->req_method."received.");
+      }
     }
-    
-    $this->reply(200,"OK");
   }
-  
   
   /**
    * Reads response
@@ -865,7 +870,7 @@ class PhpSIP
    * @param int $code     Response code
    * @param string $text  Response text
    */
-  private function reply($code,$text)
+  public function reply($code,$text)
   {
     $r = 'SIP/2.0 '.$code.' '.$text."\r\n";
     // Via
