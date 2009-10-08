@@ -418,7 +418,7 @@ class PhpSIP
    */
   public function setFrom($from)
   {
-    if (strpos($from,"<"))
+    if (preg_match('/^<.*>$/',$from))
     {
       $this->from = $from;
     }
@@ -500,7 +500,7 @@ class PhpSIP
     }
     
     $this->uri = $uri;
-    $this->to = $uri;
+    $this->to = '<'.$uri.'>';
     
     if ($this->proxy)
     {
@@ -864,9 +864,9 @@ class PhpSIP
       $r.= 'Via: '.$via."\r\n";
     }
     // From
-    $r.= 'From: <'.$this->from.'>;tag='.$this->to_tag."\r\n";
+    $r.= 'From: '.$this->from.';tag='.$this->to_tag."\r\n";
     // To
-    $r.= 'To: <'.$this->to.'>;tag='.$this->from_tag."\r\n";
+    $r.= 'To: '.$this->to.';tag='.$this->from_tag."\r\n";
     // Call-ID
     $r.= 'Call-ID: '.$this->call_id."\r\n";
     //CSeq
@@ -907,12 +907,12 @@ class PhpSIP
     }
     // From
     if (!$this->from_tag) $this->setFromTag();
-    $a.= 'From: <'.$this->from.'>;tag='.$this->from_tag."\r\n";
+    $a.= 'From: '.$this->from.';tag='.$this->from_tag."\r\n";
     // To
     if ($this->to_tag)
-      $a.= 'To: <'.$this->to.'>;tag='.$this->to_tag."\r\n";
+      $a.= 'To: '.$this->to.';tag='.$this->to_tag."\r\n";
     else
-      $a.= 'To: <'.$this->to.'>'."\r\n";
+      $a.= 'To: '.$this->to."\r\n";
     // Call-ID
     if (!$this->call_id) $this->setCallId();
     $a.= 'Call-ID: '.$this->call_id."\r\n";
@@ -968,9 +968,9 @@ class PhpSIP
     $r.= 'From: '.$this->from.';tag='.$this->from_tag."\r\n";
     // To
     if (!in_array($this->method,array("INVITE","CANCEL","NOTIFY")) && $this->to_tag)
-      $r.= 'To: <'.$this->to.'>;tag='.$this->to_tag."\r\n";
+      $r.= 'To: '.$this->to.';tag='.$this->to_tag."\r\n";
     else
-      $r.= 'To: <'.$this->to.'>'."\r\n";
+      $r.= 'To: '.$this->to."\r\n";
     // Authentication
     if ($this->auth)
     {
