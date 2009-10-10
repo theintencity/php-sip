@@ -48,7 +48,7 @@ class PhpSIP
   /**
    * Lock file
    */
-  private $lock_file = '/tmp/phpSIP.lock';
+  private $lock_file;
   
   /**
    * Allowed methods array
@@ -206,10 +206,31 @@ class PhpSIP
   
   /**
    * Constructor
+   * 
+   * @param $src_ip Ip address to bind (optional)
    */
-  public function __construct($src_ip)
+  public function __construct($src_ip = null)
   {
+    if (!function_exists('socket_create'))
+    {
+      throw new Exception("socket_create() function missing.");
+    }
+    
+    if (!$src_ip)
+    {
+      $addr = gethostbynamel(php_uname('n'));
+      
+      if (!is_array($addr) || !isset($addr[0]))
+      {
+        throw new Exception("Failed to obtain IP address to bind.");
+      }
+      
+      $src_ip = $addr[0];
+    }
+        
     $this->src_ip = $src_ip;
+    
+    $this->lock_file = rtrim(sys_get_temp_dir(),DIRECTORY_SEPARATOR).DIRECTORY_SEPARATOR.'phpSIP.lock';
     
     $this->createSocket();
   }
@@ -244,11 +265,11 @@ class PhpSIP
     
     // waiting until file will be locked for writing 
     // (1000 milliseconds as timeout)
-    $fp = @fopen($this->lock_file, 'a+');
+    $fp = @fopen($this->lock_file, 'a+b');
     
     if (!$fp)
     {
-      throw new Exception ("Can't open lock file.");
+      throw new Exception ("Failed to open lock file ".$this->lock_file);
     }
     
     $startTime = microtime();
@@ -272,7 +293,7 @@ class PhpSIP
     if ($size)
     {
       $contents = fread($fp, $size);
-      $pids = explode("\n",$contents);
+      $pids = explode(",",$contents);
     }
     else
     {
@@ -336,7 +357,7 @@ class PhpSIP
       
       $pids[] = $src_port;
       
-      if (!fwrite($fp, implode("\n",$pids)))
+      if (!fwrite($fp, implode(",",$pids)))
       {
         throw new Exception ("Failed to write data to lock file.");
       }
@@ -358,7 +379,7 @@ class PhpSIP
   {
     // waiting until file will be locked for writing 
     // (1000 milliseconds as timeout)
-    $fp = fopen($this->lock_file, 'r+');
+    $fp = fopen($this->lock_file, 'r+b');
     
     if (!$fp)
     {
@@ -381,15 +402,25 @@ class PhpSIP
       throw new Exception ("Failed to lock a file in 1000 ms.");
     }
     
+    clearstatcache();
+    
+    $size = filesize($this->lock_file);
+    $content = fread($fp,$size);
+    
     //file was locked
-    $pids = explode("\n",file_get_contents($this->lock_file));
+    $pids = explode(",",$content);
     
     $key = array_search($this->src_port,$pids);
     
     unset($pids[$key]);
     
-    if (count($pids) == 0)
+    if (count($pids) === 0)
     {
+      if (!fclose($fp))
+      {
+        throw new Exception ("Failed to close lock_file");
+      }
+      
       if (!unlink($this->lock_file))
       {
         throw new Exception ("Failed to delete lock_file.");
@@ -399,15 +430,15 @@ class PhpSIP
     {
       ftruncate($fp, 0);
       
-      if (!fwrite($fp, implode("\n",$pids)))
+      if (!fwrite($fp, implode(",",$pids)))
       {
         throw new Exception ("Failed to save data in lock_file");
       }
-    }
-    
-    if (!fclose($fp))
-    {
-      throw new Exception ("Failed to close lock_file");
+      
+      if (!fclose($fp))
+      {
+        throw new Exception ("Failed to close lock_file");
+      }
     }
   }
   
