@@ -254,6 +254,16 @@ class PhpSIP
   }
   
   /**
+   * Gets src IP
+   * 
+   * @return string
+   */
+  public function getSrcIp()
+  {
+    return $this->src_ip;
+  }
+  
+  /**
    * Gets port number to bind
    */
   private function getPort()
