@@ -1,9 +1,11 @@
 <?php
 require_once('PhpSIP.class.php');
 
+/* Sends NOTIFY to reset Linksys phone */
+
 try
 {
-  $api = new PhpSIP('192.168.5.10'); // IP we will bind to
+  $api = new PhpSIP();
   $api->setUsername('10000'); // authentication username
   $api->setPassword('secret'); // authentication password
   // $api->setProxy('some_ip_here'); 
@@ -17,7 +19,7 @@ try
   
 } catch (Exception $e) {
   
-  echo $e->getMessage()."\n";
+  echo $e;
 }
 
 ?>
