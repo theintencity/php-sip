@@ -220,11 +220,11 @@ class PhpSIP
     {
       $addr = gethostbynamel(php_uname('n'));
       
-      if (!is_array($addr) || !isset($addr[0]))
+      if (!is_array($addr) || !isset($addr[0]) || substr($addr[0],0,3) == '127')
       {
-        throw new Exception("Failed to obtain IP address to bind.");
+        throw new Exception("Failed to obtain IP address to bind. Please set bind address manualy.");
       }
-      
+	  
       $src_ip = $addr[0];
     }
         
@@ -1261,7 +1261,7 @@ class PhpSIP
     if (!@socket_bind($this->socket, $this->src_ip, $this->src_port))
     {
       $err_no = socket_last_error($this->socket);
-      throw new Exception (socket_strerror($err_no));
+      throw new Exception ("Failed to bind ".$this->src_ip.":".$this->src_port." ".socket_strerror($err_no));
     }
     
     if (!@socket_set_option($this->socket, SOL_SOCKET, SO_RCVTIMEO, array("sec"=>5,"usec"=>0)))
