@@ -223,16 +223,25 @@ class PhpSIP
     
     if (!$src_ip)
     {
-      $addr = gethostbynamel(php_uname('n'));
-      
-      if (!is_array($addr) || !isset($addr[0]) || substr($addr[0],0,3) == '127')
+      // running in a web server
+      if (isset($_SERVER['SERVER_ADDR']))
       {
-        throw new Exception("Failed to obtain IP address to bind. Please set bind address manualy.");
+        $src_ip = $_SERVER['SERVER_ADDR'];
       }
-	  
-      $src_ip = $addr[0];
-    }
+      // running from command line
+      else
+      {
+        $addr = gethostbynamel(php_uname('n'));
         
+        if (!is_array($addr) || !isset($addr[0]) || substr($addr[0],0,3) == '127')
+        {
+          throw new Exception("Failed to obtain IP address to bind. Please set bind address manualy.");
+        }
+      
+        $src_ip = $addr[0];
+      }
+    }
+    
     $this->src_ip = $src_ip;
     
     $this->lock_file = rtrim(sys_get_temp_dir(),DIRECTORY_SEPARATOR).DIRECTORY_SEPARATOR.'phpSIP.lock';
