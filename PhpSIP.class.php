@@ -29,7 +29,7 @@
  * @ingroup  API
  * @author Chris Maciejewski <chris@wima.co.uk>
  * 
- * @version    SVN: $Id: PhpSIP.class.php 1397 2009-09-13 09:20:28Z chris $
+ * @version    SVN: $Id$
  */
 class PhpSIP
 {
