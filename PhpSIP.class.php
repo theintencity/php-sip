@@ -146,6 +146,11 @@ class PhpSIP
    * From
    */
   private $from;
+  
+  /**
+   * From User
+   */
+  private $from_user;
 
   /**
    * From tag
@@ -477,6 +482,14 @@ class PhpSIP
     {
       $this->from = '<'.$from.'>';
     }
+    
+    $m = array();
+    if (!preg_match('/sip:(.*)@/i',$this->from,$m))
+    {
+      throw new Exception('Failed to parse From username.');
+    }
+    
+    $this->from_user = $m[1];
   }
   
   /**
@@ -1045,7 +1058,7 @@ class PhpSIP
     // Contact
     if ($this->method != 'MESSAGE')
     {
-      $r.= 'Contact: <sip:'.$this->src_ip.':'.$this->src_port.'>'."\r\n";
+      $r.= 'Contact: <sip:'.$this->from_user.'@'.$this->src_ip.':'.$this->src_port.'>'."\r\n";
     }
     // Content-Type
     if ($this->content_type)
