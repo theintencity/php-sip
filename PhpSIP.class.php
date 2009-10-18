@@ -1196,18 +1196,24 @@ class PhpSIP
   {
     if (!$this->username)
     {
-      throw new Exception("Missing username");
+      throw new Exception("Missing auth username");
     }
     
     if (!$this->password)
     {
-      throw new Exception("Missing password");
+      throw new Exception("Missing auth password");
     }
     
-    // we can only do qop="auth"
-    if (strpos($this->response,'qop="auth"') === false)
+    $qop_present = false;
+    if (strpos($this->response,'qop=') !== false)
     {
-      throw new Exception('Only qop="auth" digest authentication supported.');
+      $qop_present = true;
+      
+      // we can only do qop="auth"
+      if  (strpos($this->response,'qop="auth"') === false)
+      {
+        throw new Exception('Only qop="auth" digest authentication supported.');
+      }
     }
     
     // realm
@@ -1231,11 +1237,23 @@ class PhpSIP
     $ha1 = md5($this->username.':'.$realm.':'.$this->password);
     $ha2 = md5($this->method.':'.$this->uri);
     
-    $cnonce = md5(time());
+    if ($qop_present)
+    {
+      $cnonce = md5(time());
+      
+      $res = md5($ha1.':'.$nonce.':00000001:'.$cnonce.':auth:'.$ha2);
+    }
+    else
+    {
+      $res = md5($ha1.':'.$nonce.':'.$ha2);
+    }
     
-    $res = md5($ha1.':'.$nonce.':00000001:'.$cnonce.':auth:'.$ha2);
+    $this->auth = 'Authorization: Digest username="'.$this->username.'", realm="'.$realm.'", nonce="'.$nonce.'", uri="'.$this->uri.'", response="'.$res.'", algorithm=MD5';
     
-    $this->auth = 'Authorization: Digest username="'.$this->username.'", realm="'.$realm.'", nonce="'.$nonce.'", uri="'.$this->uri.'", qop=auth, nc=00000001, cnonce="'.$cnonce.'", response="'.$res.'", algorithm=MD5';
+    if ($qop_present)
+    {
+      $this->auth.= ', qop="auth", nc="00000001", cnonce="'.$cnonce.'"';
+    }
   }
   
   /**
