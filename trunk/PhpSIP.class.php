@@ -31,6 +31,8 @@
  * 
  * @version    SVN: $Id$
  */
+require_once 'PhpSIP.Exception.php';
+
 class PhpSIP
 {
   private $debug = false;
@@ -218,7 +220,7 @@ class PhpSIP
   {
     if (!function_exists('socket_create'))
     {
-      throw new Exception("socket_create() function missing.");
+      throw new PhpSIPException("socket_create() function missing.");
     }
     
     if (!$src_ip)
@@ -235,7 +237,7 @@ class PhpSIP
         
         if (!is_array($addr) || !isset($addr[0]) || substr($addr[0],0,3) == '127')
         {
-          throw new Exception("Failed to obtain IP address to bind. Please set bind address manualy.");
+          throw new PhpSIPException("Failed to obtain IP address to bind. Please set bind address manualy.");
         }
       
         $src_ip = $addr[0];
@@ -284,7 +286,7 @@ class PhpSIP
   {
     if ($this->min_port > $this->max_port)
     {
-      throw new Exception ("Min port is bigger than max port.");
+      throw new PhpSIPException ("Min port is bigger than max port.");
     }
     
     // waiting until file will be locked for writing 
@@ -293,7 +295,7 @@ class PhpSIP
     
     if (!$fp)
     {
-      throw new Exception ("Failed to open lock file ".$this->lock_file);
+      throw new PhpSIPException ("Failed to open lock file ".$this->lock_file);
     }
     
     $startTime = microtime();
@@ -309,7 +311,7 @@ class PhpSIP
     
     if (!$canWrite)
     {
-      throw new Exception ("Failed to lock a file in 1000 ms.");
+      throw new PhpSIPException ("Failed to lock a file in 1000 ms.");
     }
     
     //file was locked
@@ -331,7 +333,7 @@ class PhpSIP
     {
       if (!fwrite($fp, $this->min_port))
       {
-        throw new Exception ("Fail to write data to a lock file.");
+        throw new PhpSIPException("Fail to write data to a lock file.");
       }
       
       $this->src_port =  $this->min_port;
@@ -342,7 +344,7 @@ class PhpSIP
       // check if there are any empty ports left
       if (count($pids) >= ($this->max_port - $this->min_port))
       {
-        throw new Exception ("No more ports left to bind.");
+        throw new PhpSIPException("No more ports left to bind.");
       }
       
       asort($pids,SORT_NUMERIC);
@@ -368,7 +370,7 @@ class PhpSIP
         
         if (($prev + 1) >= $this->max_port)
         {
-          throw new Exception ("No more ports left to bind. We shouldn't be here!");
+          throw new PhpSIPException("No more ports left to bind. We shouldn't be here!");
         }
         
         $src_port = $prev + 1;
@@ -376,14 +378,14 @@ class PhpSIP
       
       if (in_array($src_port,$pids))
       {
-        throw new Exception ("Fail to obtain free port number.");
+        throw new PhpSIPException("Fail to obtain free port number.");
       }
       
       $pids[] = $src_port;
       
       if (!fwrite($fp, implode(",",$pids)))
       {
-        throw new Exception ("Failed to write data to lock file.");
+        throw new PhpSIPException("Failed to write data to lock file.");
       }
       
       $this->src_port = $src_port;
@@ -391,7 +393,7 @@ class PhpSIP
     
     if (!fclose($fp))
     {
-      throw new Exception ("Failed to close lock_file");
+      throw new PhpSIPException("Failed to close lock_file");
     }
     
   }
@@ -407,7 +409,7 @@ class PhpSIP
     
     if (!$fp)
     {
-      throw new Exception ("Can't open lock file.");
+      throw new PhpSIPException("Can't open lock file.");
     }
     
     $startTime = microtime();
@@ -423,7 +425,7 @@ class PhpSIP
     
     if (!$canWrite)
     {
-      throw new Exception ("Failed to lock a file in 1000 ms.");
+      throw new PhpSIPException("Failed to lock a file in 1000 ms.");
     }
     
     clearstatcache();
@@ -442,12 +444,12 @@ class PhpSIP
     {
       if (!fclose($fp))
       {
-        throw new Exception ("Failed to close lock_file");
+        throw new PhpSIPException("Failed to close lock_file");
       }
       
       if (!unlink($this->lock_file))
       {
-        throw new Exception ("Failed to delete lock_file.");
+        throw new PhpSIPException("Failed to delete lock_file.");
       }
     }
     else
@@ -456,12 +458,12 @@ class PhpSIP
       
       if (!fwrite($fp, implode(",",$pids)))
       {
-        throw new Exception ("Failed to save data in lock_file");
+        throw new PhpSIPException("Failed to save data in lock_file");
       }
       
       if (!fclose($fp))
       {
-        throw new Exception ("Failed to close lock_file");
+        throw new PhpSIPException("Failed to close lock_file");
       }
     }
   }
@@ -495,7 +497,7 @@ class PhpSIP
     $m = array();
     if (!preg_match('/sip:(.*)@/i',$this->from,$m))
     {
-      throw new Exception('Failed to parse From username.');
+      throw new PhpSIPException('Failed to parse From username.');
     }
     
     $this->from_user = $m[1];
@@ -510,7 +512,7 @@ class PhpSIP
   {
     if (!in_array($method,$this->allowed_methods))
     {
-      throw new Exception('Invalid method.');
+      throw new PhpSIPException('Invalid method.');
     }
     
     $this->method = $method;
@@ -569,7 +571,7 @@ class PhpSIP
   {
     if (strpos($uri,'sip:') === false)
     {
-      throw new Exception("Only sip: URI supported.");
+      throw new PhpSIPException("Only sip: URI supported.");
     }
     
     $this->uri = $uri;
@@ -595,7 +597,7 @@ class PhpSIP
       
       if (!$url = @parse_url($url))
       {
-        throw new Exception("Failed to parse URI.");
+        throw new PhpSIPException("Failed to parse URI.");
       }
       
       $this->host = $url['host'];
@@ -646,17 +648,17 @@ class PhpSIP
   {
     if (!$this->from)
     {
-      throw new Exception('Missing From.');
+      throw new PhpSIPException('Missing From.');
     }
     
     if (!$this->method)
     {
-      throw new Exception('Missing Method.');
+      throw new PhpSIPException('Missing Method.');
     }
     
     if (!$this->uri)
     {
-      throw new Exception('Missing URI.');
+      throw new PhpSIPException('Missing URI.');
     }
     
     $data = $this->formatRequest();
@@ -727,7 +729,7 @@ class PhpSIP
     if (!@socket_sendto($this->socket, $data, strlen($data), 0, $this->host, $this->port))
     {
       $err_no = socket_last_error($this->socket);
-      throw new Exception(socket_strerror($err_no));
+      throw new PhpSIPException("Failed to send data. ".socket_strerror($err_no));
     }
     
     if ($this->debug)
@@ -754,7 +756,7 @@ class PhpSIP
       
       if ($i > 5)
       {
-        throw new Exception("Unexpected request ".$this->req_method."received.");
+        throw new PhpSIPException("Unexpected request ".$this->req_method."received.");
       }
     }
   }
@@ -1176,19 +1178,19 @@ class PhpSIP
   {
     if (!$this->username)
     {
-      throw new Exception("Missing username");
+      throw new PhpSIPException("Missing username");
     }
     
     if (!$this->password)
     {
-      throw new Exception("Missing password");
+      throw new PhpSIPException("Missing password");
     }
     
     // realm
     $result = array();
     if (!preg_match('/^Proxy-Authenticate: .* realm="(.*)"/imU',$this->response, $result))
     {
-      throw new Exception("Can't find realm in proxy-auth");
+      throw new PhpSIPException("Can't find realm in proxy-auth");
     }
     
     $realm = $result[1];
@@ -1197,7 +1199,7 @@ class PhpSIP
     $result = array();
     if (!preg_match('/^Proxy-Authenticate: .* nonce="(.*)"/imU',$this->response, $result))
     {
-      throw new Exception("Can't find nonce in proxy-auth");
+      throw new PhpSIPException("Can't find nonce in proxy-auth");
     }
     
     $nonce = $result[1];
@@ -1218,12 +1220,12 @@ class PhpSIP
   {
     if (!$this->username)
     {
-      throw new Exception("Missing auth username");
+      throw new PhpSIPException("Missing auth username");
     }
     
     if (!$this->password)
     {
-      throw new Exception("Missing auth password");
+      throw new PhpSIPException("Missing auth password");
     }
     
     $qop_present = false;
@@ -1234,7 +1236,7 @@ class PhpSIP
       // we can only do qop="auth"
       if  (strpos($this->response,'qop="auth"') === false)
       {
-        throw new Exception('Only qop="auth" digest authentication supported.');
+        throw new PhpSIPException('Only qop="auth" digest authentication supported.');
       }
     }
     
@@ -1242,7 +1244,7 @@ class PhpSIP
     $result = array();
     if (!preg_match('/^WWW-Authenticate: .* realm="(.*)"/imU',$this->response, $result))
     {
-      throw new Exception("Can't find realm in www-auth");
+      throw new PhpSIPException("Can't find realm in www-auth");
     }
     
     $realm = $result[1];
@@ -1251,7 +1253,7 @@ class PhpSIP
     $result = array();
     if (!preg_match('/^WWW-Authenticate: .* nonce="(.*)"/imU',$this->response, $result))
     {
-      throw new Exception("Can't find nonce in www-auth");
+      throw new PhpSIPException("Can't find nonce in www-auth");
     }
     
     $nonce = $result[1];
@@ -1289,31 +1291,31 @@ class PhpSIP
     
     if (!$this->src_ip)
     {
-      throw new Exception("Source IP not defined.");
+      throw new PhpSIPException("Source IP not defined.");
     }
     
     if (!$this->socket = @socket_create(AF_INET, SOCK_DGRAM, SOL_UDP))
     {
       $err_no = socket_last_error($this->socket);
-      throw new Exception (socket_strerror($err_no));
+      throw new PhpSIPException (socket_strerror($err_no));
     }
     
     if (!@socket_bind($this->socket, $this->src_ip, $this->src_port))
     {
       $err_no = socket_last_error($this->socket);
-      throw new Exception ("Failed to bind ".$this->src_ip.":".$this->src_port." ".socket_strerror($err_no));
+      throw new PhpSIPException ("Failed to bind ".$this->src_ip.":".$this->src_port." ".socket_strerror($err_no));
     }
     
     if (!@socket_set_option($this->socket, SOL_SOCKET, SO_RCVTIMEO, array("sec"=>5,"usec"=>0)))
     {
       $err_no = socket_last_error($this->socket);
-      throw new Exception (socket_strerror($err_no));
+      throw new PhpSIPException (socket_strerror($err_no));
     }
     
     if (!@socket_set_option($this->socket, SOL_SOCKET, SO_SNDTIMEO, array("sec"=>5,"usec"=>0)))
     {
       $err_no = socket_last_error($this->socket);
-      throw new Exception (socket_strerror($err_no));
+      throw new PhpSIPException (socket_strerror($err_no));
     }
   }
   
