@@ -483,7 +483,7 @@ class PhpSIP
    */
   public function setFrom($from)
   {
-    if (preg_match('/^<.*>$/',$from))
+    if (preg_match('/<.*>$/',$from))
     {
       $this->from = $from;
     }
