@@ -48,6 +48,11 @@ class PhpSIP
   private $max_port = 5265;
   
   /**
+   * Final Response timer (in seconds)
+   */
+  private $fr_timer = 7;
+  
+  /**
    * Lock file
    */
   private $lock_file;
@@ -771,7 +776,7 @@ class PhpSIP
     
     if (!@socket_recvfrom($this->socket, $this->response, 10000, 0, $from, $port))
     {
-      $this->res_code = "No final response in 5 seconds.";
+      $this->res_code = "No final response in fr_timer seconds.";
       return $this->res_code;
     }
     
@@ -1306,7 +1311,7 @@ class PhpSIP
       throw new PhpSIPException ("Failed to bind ".$this->src_ip.":".$this->src_port." ".socket_strerror($err_no));
     }
     
-    if (!@socket_set_option($this->socket, SOL_SOCKET, SO_RCVTIMEO, array("sec"=>5,"usec"=>0)))
+    if (!@socket_set_option($this->socket, SOL_SOCKET, SO_RCVTIMEO, array("sec"=>$this->fr_timer,"usec"=>0)))
     {
       $err_no = socket_last_error($this->socket);
       throw new PhpSIPException (socket_strerror($err_no));
