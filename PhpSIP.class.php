@@ -1034,12 +1034,14 @@ class PhpSIP
     {
       $r = $this->method.' '.$this->uri.' SIP/2.0'."\r\n";
     }
+    
     // Via
     if ($this->method != 'CANCEL')
     {
       $this->setVia();
     }
     $r.= 'Via: '.$this->via."\r\n";
+    
     // Route
     if ($this->method != 'CANCEL' && $this->routes)
     {
@@ -1048,48 +1050,59 @@ class PhpSIP
         $r.= 'Route: '.$route."\r\n";
       }
     }
+    
     // From
     if (!$this->from_tag) $this->setFromTag();
     $r.= 'From: '.$this->from.';tag='.$this->from_tag."\r\n";
+    
     // To
-    if (!in_array($this->method,array("INVITE","CANCEL","NOTIFY")) && $this->to_tag)
+    if ($this->dialog && !in_array($this->method,array("INVITE","CANCEL","NOTIFY")) && $this->to_tag)
       $r.= 'To: '.$this->to.';tag='.$this->to_tag."\r\n";
     else
       $r.= 'To: '.$this->to."\r\n";
+    
     // Authentication
     if ($this->auth)
     {
       $r.= $this->auth."\r\n";
       $this->auth = null;
     }
+    
     // Call-ID
     if (!$this->call_id) $this->setCallId();
     $r.= 'Call-ID: '.$this->call_id."\r\n";
+    
     //CSeq
     if ($this->method == 'CANCEL')
     {
       $this->cseq--;
     }
     $r.= 'CSeq: '.$this->cseq.' '.$this->method."\r\n";
+    
     // Contact
     if ($this->method != 'MESSAGE')
     {
       $r.= 'Contact: <sip:'.$this->from_user.'@'.$this->src_ip.':'.$this->src_port.'>'."\r\n";
     }
+    
     // Content-Type
     if ($this->content_type)
     {
       $r.= 'Content-Type: '.$this->content_type."\r\n";
     }
+    
     // Max-Forwards
     $r.= 'Max-Forwards: 70'."\r\n";
+    
     // User-Agent
     $r.= 'User-Agent: '.$this->user_agent."\r\n";
+    
     // Additional header
     foreach ($this->extra_headers as $header)
     {
       $r.= $header."\r\n";
     }
+    
     // Content-Length
     $r.= 'Content-Length: '.strlen($this->body)."\r\n";
     $r.= "\r\n";
