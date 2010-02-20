@@ -50,7 +50,7 @@ class PhpSIP
   /**
    * Final Response timer (in seconds)
    */
-  private $fr_timer = 7;
+  private $fr_timer = 10;
   
   /**
    * Lock file
@@ -294,25 +294,14 @@ class PhpSIP
       throw new PhpSIPException ("Min port is bigger than max port.");
     }
     
-    // waiting until file will be locked for writing 
-    // (1000 milliseconds as timeout)
-    $fp = @fopen($this->lock_file, 'a+b');
+    $fp = @fopen($this->lock_file, 'a+');
     
     if (!$fp)
     {
       throw new PhpSIPException ("Failed to open lock file ".$this->lock_file);
     }
     
-    $startTime = microtime();
-    
-    do
-    {
-      $canWrite = flock($fp, LOCK_EX);
-      // If lock not obtained sleep for 0 - 100 milliseconds,
-      // to avoid collision and CPU load
-      if(!$canWrite) usleep(round(rand(0, 100)*1000));
-      
-    } while ((!$canWrite)and((microtime()-$startTime) < 1000));
+    $canWrite = flock($fp, LOCK_EX);
     
     if (!$canWrite)
     {
@@ -320,21 +309,25 @@ class PhpSIP
     }
     
     //file was locked
+    clearstatcache();
     $size = filesize($this->lock_file);
+    
     if ($size)
     {
       $contents = fread($fp, $size);
-      $pids = explode(",",$contents);
+      
+      $ports = explode(",",$contents);
     }
     else
     {
-      $pids = false;
+      $ports = false;
     }
     
     ftruncate($fp, 0);
+    rewind($fp);
     
     // we are the first one to run, initialize "PID" => "port number" array
-    if (!$pids)
+    if (!$ports)
     {
       if (!fwrite($fp, $this->min_port))
       {
@@ -346,49 +339,25 @@ class PhpSIP
     // there are other programs running now
     else
     {
-      // check if there are any empty ports left
-      if (count($pids) >= ($this->max_port - $this->min_port))
+      $src_port = null;
+      
+      for ($i = $this->min_port; $i <= $this->max_port; $i++)
+      {
+        if (!in_array($i,$ports))
+        {
+          $src_port = $i;
+          break;
+        }
+      }
+      
+      if (!$src_port)
       {
         throw new PhpSIPException("No more ports left to bind.");
       }
       
-      asort($pids,SORT_NUMERIC);
+      $ports[] = $src_port;
       
-      $prev = current($pids);
-      
-      if ($prev > $this->min_port)
-      {
-        $src_port = $this->min_port;
-      }
-      else
-      {
-        foreach ($pids as $port)
-        {
-          if (($port - $prev) > 1)
-          {
-            $src_port = $prev + 1;
-            break;
-          }
-          
-          $prev = $port;
-        }
-        
-        if (($prev + 1) >= $this->max_port)
-        {
-          throw new PhpSIPException("No more ports left to bind. We shouldn't be here!");
-        }
-        
-        $src_port = $prev + 1;
-      }
-      
-      if (in_array($src_port,$pids))
-      {
-        throw new PhpSIPException("Fail to obtain free port number.");
-      }
-      
-      $pids[] = $src_port;
-      
-      if (!fwrite($fp, implode(",",$pids)))
+      if (!fwrite($fp, implode(",",$ports)))
       {
         throw new PhpSIPException("Failed to write data to lock file.");
       }
@@ -408,25 +377,14 @@ class PhpSIP
    */
   private function releasePort()
   {
-    // waiting until file will be locked for writing 
-    // (1000 milliseconds as timeout)
-    $fp = fopen($this->lock_file, 'r+b');
+    $fp = fopen($this->lock_file, 'r+');
     
     if (!$fp)
     {
       throw new PhpSIPException("Can't open lock file.");
     }
     
-    $startTime = microtime();
-    
-    do
-    {
-      $canWrite = flock($fp, LOCK_EX);
-      // If lock not obtained sleep for 0 - 100 milliseconds,
-      // to avoid collision and CPU load
-      if(!$canWrite) usleep(round(rand(0, 100)*1000));
-      
-    } while ((!$canWrite)and((microtime()-$startTime) < 1000));
+    $canWrite = flock($fp, LOCK_EX);
     
     if (!$canWrite)
     {
@@ -439,13 +397,13 @@ class PhpSIP
     $content = fread($fp,$size);
     
     //file was locked
-    $pids = explode(",",$content);
+    $ports = explode(",",$content);
     
-    $key = array_search($this->src_port,$pids);
+    $key = array_search($this->src_port,$ports);
     
-    unset($pids[$key]);
+    unset($ports[$key]);
     
-    if (count($pids) === 0)
+    if (count($ports) === 0)
     {
       if (!fclose($fp))
       {
@@ -460,11 +418,14 @@ class PhpSIP
     else
     {
       ftruncate($fp, 0);
+      rewind($fp);
       
-      if (!fwrite($fp, implode(",",$pids)))
+      if (!fwrite($fp, implode(",",$ports)))
       {
         throw new PhpSIPException("Failed to save data in lock_file");
       }
+      
+      flock($fp, LOCK_UN);
       
       if (!fclose($fp))
       {
@@ -776,7 +737,7 @@ class PhpSIP
     
     if (!@socket_recvfrom($this->socket, $this->response, 10000, 0, $from, $port))
     {
-      $this->res_code = "No final response in fr_timer seconds.";
+      $this->res_code = "No final response in ".$this->fr_timer." seconds.";
       return $this->res_code;
     }
     
@@ -1344,9 +1305,9 @@ class PhpSIP
    */
   private function closeSocket()
   {
-    $this->releasePort();
-    
     socket_close($this->socket);
+    
+    $this->releasePort();
   }
   
   /**
