@@ -540,6 +540,11 @@ class PhpSIP
       throw new PhpSIPException("Only sip: URI supported.");
     }
     
+    if (strpos($uri,'transport=tcp') !== false)
+    {
+      throw new PhpSIPException("Only UDP transport supported.");
+    }
+    
     $this->uri = $uri;
     $this->to = '<'.$uri.'>';
     
@@ -559,11 +564,13 @@ class PhpSIP
     }
     else
     {
+      $uri = ($t_pos = strpos($uri,";")) ? substr($uri,0,$t_pos) : $uri;
+      
       $url = str_replace("sip:","sip://",$uri);
       
       if (!$url = @parse_url($url))
       {
-        throw new PhpSIPException("Failed to parse URI.");
+        throw new PhpSIPException("Failed to parse URI '$url'.");
       }
       
       $this->host = $url['host'];
