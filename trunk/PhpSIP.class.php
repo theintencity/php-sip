@@ -55,7 +55,7 @@ class PhpSIP
   /**
    * Lock file
    */
-  private $lock_file;
+  private $lock_file = '/dev/shm/cache/PhpSIP.lock';
   
   /**
    * Allowed methods array
@@ -251,7 +251,10 @@ class PhpSIP
     
     $this->src_ip = $src_ip;
     
-    $this->lock_file = rtrim(sys_get_temp_dir(),DIRECTORY_SEPARATOR).DIRECTORY_SEPARATOR.'phpSIP.lock';
+    if (!$this->lock_file)
+    {
+      $this->lock_file = rtrim(sys_get_temp_dir(),DIRECTORY_SEPARATOR).DIRECTORY_SEPARATOR.'phpSIP.lock';
+    }
     
     $this->createSocket();
   }
@@ -697,12 +700,10 @@ class PhpSIP
    */
   private function sendData($data)
   {
-    usleep(10000);
-    
     if (!@socket_sendto($this->socket, $data, strlen($data), 0, $this->host, $this->port))
     {
       $err_no = socket_last_error($this->socket);
-      throw new PhpSIPException("Failed to send data. ".socket_strerror($err_no));
+      throw new PhpSIPException("Failed to send data to ".$this->host.":".$this->port.". ".socket_strerror($err_no));
     }
     
     if ($this->debug)
